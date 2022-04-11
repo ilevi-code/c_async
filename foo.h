@@ -1,5 +1,5 @@
-extern long long caller;
+extern long long coro_stack;
 
-int next(void* func, void* stack);
+int next();
 
 void yield();
