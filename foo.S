@@ -1,50 +1,47 @@
 .section .data
 
-caller_stack:
+.global current
+current:
 .quad 0
-caller_bp:
-.quad 0
-.global coro_stack
-coro_stack:
-.quad 0
+
 
 .section .text
 
 .global yield
 yield:
-    /* todo save r12, r13, r14, r15, rbx, rsp, rbp */
     /* store current stack poistion */
-    lea coro_stack(%rip), %rax
-    movq %rsp, (%rax)
+    push    %rbp
+    /* load generator struct */
+    lea     current(%rip), %r11
+    movq    (%r11), %rax
 
-    lea caller_stack(%rip), %rax
-    movq (%rax), %rsp
-    lea caller_bp(%rip), %rax
-    movq    (%rax), %rbp
+    /* store generator stack position */
+    movq    %rsp, (%rax)
+    /* load caller stack */
+    movq    8(%rax), %rsp
+    pop     %rbp
 
-    movq %rdi, %rax
+    movq    %rdi, %rax
     ret
 
 
 .global next
 next:
-    /* store caller stack and base-pointer in global variable */
-    lea caller_stack(%rip), %rax
-    movq    %rsp, (%rax)
-    lea caller_bp(%rip), %rax
-    movq    %rbp, (%rax)
+    /* store callee-saved registers */
+    push    %rbp
 
-    /* load stack */
-    lea     coro_stack(%rip), %rax
-    movq    (%rax), %rsi
+    /* store current generator in global variable */
+    lea     current(%rip), %rax
+    movq    %rdi, (%rax)
+    /* store current stack in generator struct */
+    movq    %rsp, 8(%rdi)
+
     /* switch stack */
-    movq    %rsi, %rsp
-    subq    $0x8, %rsi
-    movq    %rsi, %rbp
+    movq    (%rdi), %rsp
+    /* resume flow */
+    pop     %rbp
     ret
     
     /* switch back to caller stack */
-    lea caller_stack(%rip), %rax
-    movq (%rax), %rsp
-
+    movq    8(%rdi), %rsp
     ret
