@@ -1,8 +1,11 @@
+#include <inttypes.h>
+
 typedef long long reg_t;
 
 struct gen_frame {
     reg_t rbp;
     reg_t ret_addr;
+    uint64_t _unused;  // force stack alignmet
 };
 
 struct generator {
@@ -11,7 +14,6 @@ struct generator {
     int done;
 };
 
-
-int next(struct generator* gen);
+long long next(struct generator* gen);
 
 void yield();

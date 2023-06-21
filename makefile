@@ -5,4 +5,4 @@ CFLAGS := -Wall -Werror -g
 main: main.o foo.o
 
 clean:
-	$(RM) *.o
+	$(RM) *.o main

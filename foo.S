@@ -12,8 +12,8 @@ yield:
     /* store current stack poistion */
     push    %rbp
     /* load generator struct */
-    lea     current(%rip), %r11
-    movq    (%r11), %rax
+    lea     current(%rip), %rax
+    movq    (%rax), %rax
 
     /* store generator stack position */
     movq    %rsp, (%rax)
@@ -41,7 +41,7 @@ next:
     /* resume flow */
     pop     %rbp
     ret
-    
+
     /* switch back to caller stack */
     movq    8(%rdi), %rsp
     ret
