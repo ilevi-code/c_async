@@ -1,3 +1,5 @@
+#include "foo.h"
+
 .section .data
 
 .global current
@@ -16,9 +18,9 @@ yield:
     movq    (%rax), %rax
 
     /* store generator stack position */
-    movq    %rsp, (%rax)
+    movq    %rsp, GENERATOR__GEN_STACK(%rax)
     /* load caller stack */
-    movq    8(%rax), %rsp
+    movq    GENERATOR__CALLER_STACK(%rax), %rsp
     pop     %rbp
 
     movq    %rdi, %rax
@@ -34,14 +36,14 @@ next:
     lea     current(%rip), %rax
     movq    %rdi, (%rax)
     /* store current stack in generator struct */
-    movq    %rsp, 8(%rdi)
+    movq    %rsp, GENERATOR__CALLER_STACK(%rdi)
 
     /* switch stack */
-    movq    (%rdi), %rsp
+    movq    GENERATOR__GEN_STACK(%rdi), %rsp
     /* resume flow */
     pop     %rbp
     ret
 
     /* switch back to caller stack */
-    movq    8(%rdi), %rsp
+    movq    GENERATOR__CALLER_STACK(%rdi), %rsp
     ret

@@ -29,7 +29,7 @@ struct generator* generator_create(void* func)
         perror("mmap");
         return NULL;
     }
-    stack = allocated + STACK_SIZE - sizeof(struct gen_frame);
+    stack = allocated + STACK_SIZE - sizeof(struct gen_frame) - 8;
     stack->rbp = (reg_t)(allocated + STACK_SIZE);
     stack->ret_addr = (long long)func;
 
@@ -38,13 +38,11 @@ struct generator* generator_create(void* func)
     return gen;
 }
 
-#include <stdarg.h>
-#include <unistd.h>
 void bar()
 {
     int x;
     printf("[coro stack] &x=%p\n", &x);
-    yield(2);
+    yield(17);
     yield(3);
 }
 
@@ -58,10 +56,10 @@ int main()
         return 1;
     }
 
-    int* res = (int*)next(gen);
-    printf("%p\n", res);
-    int val = next(gen);
-    printf("%d\n", val);
+    int res = next(gen);
+    printf("%d\n", res);
+    res = next(gen);
+    printf("%d\n", res);
 
     return 0;
 }
