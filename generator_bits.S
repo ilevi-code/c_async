@@ -54,10 +54,6 @@ next:
     pop     %rbp
     ret
 
-    /* switch back to caller stack */
-    movq    GENERATOR__CALLER_STACK(%rdi), %rsp
-    ret
-
 .global gen_ret
 gen_ret:
     // Make sure further calls to next on this generator
