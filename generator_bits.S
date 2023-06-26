@@ -18,6 +18,12 @@ yield:
     lea     current(%rip), %rax
     movq    (%rax), %rax
 
+    push    %rax
+    /* load previous generator and store as current */
+    movq    GENERATOR__PREV_GENERATOR(%rax), %rax
+    movq    %rax, current(%rip)
+    pop     %rax
+
     /* store generator stack position */
     movq    %rsp, GENERATOR__GEN_STACK(%rax)
     /* load caller stack */
@@ -33,11 +39,12 @@ next:
     /* store callee-saved registers */
     push    %rbp
 
-    /* store current generator in global variable */
+    /* store current generator as previous */
     lea     current(%rip), %rax
-    /* if current generator is not-null, store in new current */
+    movq    (%rax), %rax
     movq    %rax, GENERATOR__PREV_GENERATOR(%rdi)
-    movq    %rdi, (%rax)
+    /* store current generator */
+    movq    %rdi, current(%rip)
     /* store current stack in generator struct */
     movq    %rsp, GENERATOR__CALLER_STACK(%rdi)
 

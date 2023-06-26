@@ -9,9 +9,28 @@ void print_gen(struct generator* gen)
            gen->gen_stack, gen->caller_stack, gen->status);
 }
 
+void baz()
+{
+    print_gen(current);
+    yield(1);
+    yield(2);
+    yield(3);
+}
+
 void bar()
 {
     print_gen(current);
+    struct generator* gen = generator_create(&baz);
+    if (gen == NULL) {
+        return;
+    }
+
+    int value;
+    GENERATOR_WHILE(value, gen)
+    {
+        yield(value);
+    }
+
     yield(17);
     yield(3);
 }
@@ -22,7 +41,6 @@ int main()
     if (gen == NULL) {
         return 1;
     }
-    print_gen(gen);
 
     int value = 0;
     GENERATOR_WHILE(value, gen)
