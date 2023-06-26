@@ -60,6 +60,18 @@ void test_generator_exhuastion()
     EXPECT(sum == 6);
 }
 
+void test_generator_overuse()
+{
+    struct generator* gen = generator_create(&serires_yielder);
+    assert(gen != NULL);
+    int value;
+    GENERATOR_WHILE(value, gen)
+    {
+        (void)value;
+    }
+    next(gen);  // this should do nothing
+    EXPECT(gen->status == GEN_STATUS_DONE);
+}
 void test_parametrized_generator()
 {
     struct generator* gen = generator_create(&empty_func, 0xdeadbeefcafe);
@@ -119,6 +131,7 @@ void run_tests()
     RUN_TEST(test_empty_generator);
     RUN_TEST(test_generator_iteration);
     RUN_TEST(test_generator_exhuastion);
+    RUN_TEST(test_generator_overuse);
     RUN_TEST(test_parametrized_generator);
     RUN_TEST(test_generator_recursion);
     printf("[--------] All tests passed!\n");
