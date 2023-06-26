@@ -71,3 +71,9 @@ gen_ret:
     // yield 0
     xor     %rdi, %rdi
     jmp yield
+
+.global gen_entry
+gen_entry:
+    pop     %rax
+    pop     %rdi
+    call    %rax

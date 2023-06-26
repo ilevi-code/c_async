@@ -13,7 +13,7 @@ struct generator {
     int status;
 };
 
-struct generator* generator_create(void* func);
+struct generator* generator_create(void* func, ...);
 
 uint64_t next(struct generator* gen);
 

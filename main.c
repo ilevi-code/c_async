@@ -17,9 +17,10 @@ void baz()
     yield(3);
 }
 
-void bar()
+void bar(int param)
 {
     print_gen(current);
+    printf("bar got param=%d\n", param);
     struct generator* gen = generator_create(&baz);
     if (gen == NULL) {
         return;
@@ -37,7 +38,7 @@ void bar()
 
 int main()
 {
-    struct generator* gen = generator_create(&bar);
+    struct generator* gen = generator_create(&bar, 0x10);
     if (gen == NULL) {
         return 1;
     }
