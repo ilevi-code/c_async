@@ -3,6 +3,7 @@
 .section .data
 
 .global current
+.type current, object
 current:
 .quad 0
 
@@ -34,6 +35,8 @@ next:
 
     /* store current generator in global variable */
     lea     current(%rip), %rax
+    /* if current generator is not-null, store in new current */
+    movq    %rax, GENERATOR__PREV_GENERATOR(%rdi)
     movq    %rdi, (%rax)
     /* store current stack in generator struct */
     movq    %rsp, GENERATOR__CALLER_STACK(%rdi)
@@ -47,3 +50,19 @@ next:
     /* switch back to caller stack */
     movq    GENERATOR__CALLER_STACK(%rdi), %rsp
     ret
+
+.global gen_ret
+gen_ret:
+    // Make sure further calls to next on this generator
+    // will reach here and do nothing.
+    lea gen_ret(%rip), %rax
+    push %rax
+
+    // mark as finished
+    lea     current(%rip), %rax
+    movq    (%rax), %rax
+    movq    $GEN_STATUS_DONE, GENERATOR__STATUS(%rax)
+
+    // yield 0
+    xor     %rdi, %rdi
+    jmp yield

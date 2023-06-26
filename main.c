@@ -29,19 +29,27 @@ struct generator* generator_create(void* func)
         perror("mmap");
         return NULL;
     }
-    stack = allocated + STACK_SIZE - sizeof(struct gen_frame) - 8;
+    stack = allocated + STACK_SIZE - sizeof(struct gen_frame);
     stack->rbp = (reg_t)(allocated + STACK_SIZE);
     stack->ret_addr = (long long)func;
+    stack->default_ret_addr = (long long)gen_ret;
 
     gen->gen_stack = stack;
 
     return gen;
 }
 
+void print_gen(struct generator* gen)
+{
+    printf("generator at %p {prev=%p, gen_stack=%p, caller_stack=%p, status=%d}\n", gen, gen->prev_generator,
+           gen->gen_stack, gen->caller_stack, gen->status);
+}
+
 void bar()
 {
     int x;
     printf("[coro stack] &x=%p\n", &x);
+    print_gen(current);
     yield(17);
     yield(3);
 }
@@ -55,11 +63,22 @@ int main()
     if (gen == NULL) {
         return 1;
     }
+    print_gen(gen);
 
-    int res = next(gen);
-    printf("%d\n", res);
-    res = next(gen);
-    printf("%d\n", res);
+    /* for (int value = 0; value = next(gen), gen->status != GEN_STATUS_DONE;) { */
+    int value = 0;
+    GENERATOR_WHILE(value, gen)
+    {
+        printf("%d\n", value);
+    }
+    /* res = next(gen); */
+    /* printf("%d\n", res); */
+    /* res = next(gen); */
+    /* printf("%d\n", res); */
+    /* print_gen(gen); */
+    /* res = next(gen); */
+    /* printf("%d\n", res); */
+    /* print_gen(gen); */
 
     return 0;
 }

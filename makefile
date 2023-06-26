@@ -1,4 +1,5 @@
 CFLAGS := -Wall -Werror -g
+ASFLAGS := -g
 
 .PHONY: clean
 
