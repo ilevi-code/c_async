@@ -1,4 +1,4 @@
-#include "foo.h"
+#include "generator.h"
 
 .section .data
 
