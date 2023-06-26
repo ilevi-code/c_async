@@ -37,6 +37,13 @@ yield:
 .global next
 next:
     /* store callee-saved registers */
+    movq    GENERATOR__STATUS(%rdi), %rax
+    cmp     $GEN_STATUS_DONE, %rax
+    jne     not_done
+    xor     %rax, %rax
+    ret
+
+not_done:
     push    %rbp
 
     /* store current generator as previous */
@@ -56,11 +63,6 @@ next:
 
 .global gen_ret
 gen_ret:
-    // Make sure further calls to next on this generator
-    // will reach here and do nothing.
-    lea gen_ret(%rip), %rax
-    push %rax
-
     // mark as finished
     lea     current(%rip), %rax
     movq    (%rax), %rax
