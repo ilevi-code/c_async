@@ -1,9 +1,31 @@
+SRCDIR := src
+OBJDIR := obj
+INCDIR := inc
+BINDIR := bin
+
+SRCS := $(basename $(notdir $(wildcard $(SRCDIR)/*)))
+OBJS := $(patsubst %,$(OBJDIR)/%.o,$(SRCS))
+$(info $(OBJS))
+
+CPPFLAGS += -I$(INCDIR)
 CFLAGS := -Wall -Werror -g
 ASFLAGS := -g
 
-.PHONY: clean
+.PHONY: all clean
 
-main: main.o generator.o generator_bits.o tests.o
+all: $(BINDIR)/main
 
 clean:
-	$(RM) *.o main
+	$(RM) $(BINDIR)/main $(OBJS)
+
+$(BINDIR)/main: $(OBJS) | $(BINDIR)
+	$(LINK.o) $(OUTPUT_OPTION) $^
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	$(COMPILE.c) $(OUTPUT_OPTION) $^
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.S | $(OBJDIR)
+	$(COMPILE.S) $(OUTPUT_OPTION) $^
+
+$(BINDIR) $(OBJDIR):
+	mkdir -p $@
