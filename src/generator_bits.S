@@ -76,4 +76,4 @@ gen_ret:
 gen_entry:
     pop     %rax
     pop     %rdi
-    call    %rax
+    call    *%rax

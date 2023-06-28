@@ -45,7 +45,6 @@ struct generator* generator_create(void* func, ...)
         return NULL;
     }
     stack = allocated + STACK_SIZE - sizeof(struct gen_frame);
-    /* stack->ret_addr = (long long)func; */
     stack->rbp = (reg_t)(allocated + STACK_SIZE);
     stack->ret_addr = (reg_t)&gen_entry;
     stack->param = param;
