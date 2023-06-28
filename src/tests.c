@@ -30,6 +30,7 @@ void test_generator_creation()
 {
     struct generator* gen = generator_create(&empty_func);
     assert(gen != NULL);
+    /* generator_destory(gen); */
 }
 
 void test_empty_generator()
