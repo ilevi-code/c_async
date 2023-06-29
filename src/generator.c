@@ -15,7 +15,7 @@ struct gen_frame {
     reg_t ret_addr;
     reg_t generator_func;
     reg_t param;
-    reg_t default_ret_addr;
+    reg_t _padding;  // force stack alignment
 };
 
 void gen_entry(void);
@@ -48,7 +48,6 @@ struct generator* generator_create(void* func, ...)
     stack->ret_addr = (reg_t)&gen_entry;
     stack->param = param;
     stack->generator_func = (reg_t)func;
-    stack->default_ret_addr = (long long)gen_ret;
 
     gen->gen_stack = stack;
     gen->stack_size = STACK_SIZE;

@@ -61,19 +61,20 @@ not_done:
     pop     %rbp
     ret
 
-.global gen_ret
-gen_ret:
-    // mark as finished
-    lea     current(%rip), %rax
-    movq    (%rax), %rax
-    movq    $GEN_STATUS_DONE, GENERATOR__STATUS(%rax)
-
-    // yield 0
-    xor     %rdi, %rdi
-    jmp yield
-
 .global gen_entry
 gen_entry:
     pop     %rax
     pop     %rdi
     call    *%rax
+
+    /* mark as finished */
+    lea     current(%rip), %rax
+    movq    (%rax), %rax
+    movq    $GEN_STATUS_DONE, GENERATOR__STATUS(%rax)
+
+gen_entry_loop:
+    /* yield 0 */
+    xor     %rdi, %rdi
+    call yield
+    jmp gen_entry_loop
+

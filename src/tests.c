@@ -30,7 +30,7 @@ void test_generator_creation()
 {
     struct generator* gen = generator_create(&empty_func);
     assert(gen != NULL);
-    /* generator_destory(gen); */
+    generator_destory(gen);
 }
 
 void test_empty_generator()
@@ -39,6 +39,7 @@ void test_empty_generator()
     assert(gen != NULL);
     next(gen);
     EXPECT(gen->status == GEN_STATUS_DONE);
+    generator_destory(gen);
 }
 
 void test_generator_iteration()
@@ -46,6 +47,7 @@ void test_generator_iteration()
     struct generator* gen = generator_create(&serires_yielder);
     assert(gen != NULL);
     EXPECT(next(gen) == 1);
+    generator_destory(gen);
 }
 
 void test_generator_exhuastion()
@@ -59,6 +61,7 @@ void test_generator_exhuastion()
         sum += value;
     }
     EXPECT(sum == 6);
+    generator_destory(gen);
 }
 
 void test_generator_overuse()
@@ -72,6 +75,7 @@ void test_generator_overuse()
     }
     next(gen);  // this should do nothing
     EXPECT(gen->status == GEN_STATUS_DONE);
+    generator_destory(gen);
 }
 void test_parametrized_generator()
 {
@@ -79,6 +83,7 @@ void test_parametrized_generator()
     assert(gen != NULL);
     next(gen);
     EXPECT(gen->status == GEN_STATUS_DONE);
+    generator_destory(gen);
 }
 
 void uses_other_generator(int reps)
@@ -91,6 +96,7 @@ void uses_other_generator(int reps)
         {
             yield(value);
         }
+        generator_destory(gen);
     }
 }
 
@@ -109,6 +115,7 @@ void test_generator_recursion()
     }
 
     EXPECT(sum == 6 * REPS);
+    generator_destory(gen);
 }
 
 #define RUN_TEST(test) run_test(test, #test);
