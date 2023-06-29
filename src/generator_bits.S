@@ -73,9 +73,7 @@ gen_entry:
     movq    (%rax), %rax
     movq    $GEN_STATUS_DONE, GENERATOR__STATUS(%rax)
 
-gen_entry_loop:
     /* yield 0 */
     xor     %rdi, %rdi
     call yield
-    jmp gen_entry_loop
 
