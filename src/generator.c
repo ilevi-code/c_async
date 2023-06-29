@@ -15,7 +15,7 @@ struct gen_frame {
     reg_t ret_addr;
     reg_t generator_func;
     reg_t param;
-    reg_t _padding;  // force stack alignment
+    /* reg_t _padding;  // force stack alignment */
 };
 
 void gen_entry(void);

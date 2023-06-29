@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include "generator.h"
 
+#define STACK_ALIGNMENT (16)
+
 int failed = 0;
 #define EXPECT(cond)                              \
     ({                                            \
@@ -22,6 +24,13 @@ void expects_sent_cafebabeba5e()
 {
     uint64_t sent = yield();
     assert(sent == 0xcafebabeba5e);
+}
+
+void stack_alignment_checker()
+{
+    uint64_t stack_base_pointer;
+    asm volatile("movq %%rbp,%0" : "=r"(stack_base_pointer));
+    assert(stack_base_pointer % STACK_ALIGNMENT == 0);
 }
 
 void serires_yielder(int param)
@@ -60,6 +69,14 @@ void test_generator_value_sending()
     struct generator* gen = generator_create(&expects_sent_cafebabeba5e);
     assert(gen != NULL);
     next(gen, 0xcafebabeba5e);
+    generator_destory(gen);
+}
+
+void test_stack_alignment()
+{
+    struct generator* gen = generator_create(&stack_alignment_checker);
+    assert(gen != NULL);
+    next(gen);
     generator_destory(gen);
 }
 
@@ -157,6 +174,7 @@ void run_tests()
     RUN_TEST(test_empty_generator);
     RUN_TEST(test_generator_iteration);
     RUN_TEST(test_generator_value_sending);
+    RUN_TEST(test_stack_alignment);
     RUN_TEST(test_generator_exhuastion);
     RUN_TEST(test_generator_overuse);
     RUN_TEST(test_parametrized_generator);
