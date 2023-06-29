@@ -18,6 +18,11 @@ void expectes_param_deadbeefcafe(long long param)
 {
     assert(param == 0xdeadbeefcafe);
 }
+void expects_sent_cafebabeba5e()
+{
+    uint64_t sent = yield();
+    assert(sent == 0xcafebabeba5e);
+}
 
 void serires_yielder(int param)
 {
@@ -50,6 +55,14 @@ void test_generator_iteration()
     generator_destory(gen);
 }
 
+void test_generator_value_sending()
+{
+    struct generator* gen = generator_create(&expects_sent_cafebabeba5e);
+    assert(gen != NULL);
+    next(gen, 0xcafebabeba5e);
+    generator_destory(gen);
+}
+
 void test_generator_exhuastion()
 {
     int sum = 0;
@@ -73,8 +86,13 @@ void test_generator_overuse()
     {
         (void)value;
     }
-    next(gen);  // this should do nothing
+
+    for (int i = 0; i < 10; i++) {
+        int res = next(gen);  // this should do nothing
+        EXPECT(res == 0);
+    }
     EXPECT(gen->status == GEN_STATUS_DONE);
+
     generator_destory(gen);
 }
 void test_parametrized_generator()
@@ -138,6 +156,7 @@ void run_tests()
     RUN_TEST(test_generator_creation);
     RUN_TEST(test_empty_generator);
     RUN_TEST(test_generator_iteration);
+    RUN_TEST(test_generator_value_sending);
     RUN_TEST(test_generator_exhuastion);
     RUN_TEST(test_generator_overuse);
     RUN_TEST(test_parametrized_generator);

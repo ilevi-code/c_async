@@ -36,7 +36,7 @@ yield:
 
 .global next
 next:
-    /* store callee-saved registers */
+    /* check if current generator is done */
     movq    GENERATOR__STATUS(%rdi), %rax
     cmp     $GEN_STATUS_DONE, %rax
     jne     not_done
@@ -59,6 +59,7 @@ not_done:
     movq    GENERATOR__GEN_STACK(%rdi), %rsp
     /* resume flow */
     pop     %rbp
+    mov     %rsi, %rax
     ret
 
 .global gen_entry

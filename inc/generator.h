@@ -29,9 +29,9 @@ struct generator* generator_create(void* func, ...);
 
 void generator_destory(struct generator* gen);
 
-uint64_t next(struct generator* gen);
+uint64_t next(struct generator* gen, ...);
 
-void yield();
+uint64_t yield();
 
 void gen_ret();
 
