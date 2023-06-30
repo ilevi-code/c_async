@@ -16,7 +16,7 @@ typedef enum await_status_e {
  *         AWAIT_ERR if failed to add to wait queue.
  *      Of the states above, only AWAIT_ERR did not block.
  */
-int await_readable(int fd);
+await_status_t await_readable(int fd);
 
 void cancel_await_readable(int fd);
 

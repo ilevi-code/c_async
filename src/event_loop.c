@@ -4,10 +4,9 @@
 
 #include "event_loop.h"
 #include "list.h"
+#include "utils.h"
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MAX_FDS (1024)
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(*arr))
 
 static struct loop_s {
     fd_set readers;
@@ -65,7 +64,7 @@ void handle_readers(fd_set* read_ready)
     }
 }
 
-int await_readable(int fd)
+await_status_t await_readable(int fd)
 {
     loop.max_fd = MAX(loop.max_fd, fd + 1);
     FD_SET(fd, &loop.readers);
