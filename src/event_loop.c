@@ -13,7 +13,10 @@ static struct loop_s {
     fd_set readers;
     int max_fd;
     list_t registered[MAX_FDS];
+    list_t scheduled;
 } loop;
+
+void execute_scheduled();
 
 void handle_readers(fd_set* read_ready);
 
@@ -23,6 +26,7 @@ void event_loop_run(struct generator* gen)
     for (size_t i = 0; i < ARRAY_SIZE(loop.registered); i++) {
         list_init(&loop.registered[i]);
     }
+    list_init(&loop.scheduled);
     FD_ZERO(&loop.readers);
     fd_set readers_copy;
 
@@ -37,6 +41,10 @@ void event_loop_run(struct generator* gen)
         }
 
         handle_readers(&readers_copy);
+
+        while (!list_is_empty(&loop.scheduled)) {
+            execute_scheduled();
+        }
     }
 }
 
@@ -65,4 +73,33 @@ int await_readable(int fd)
         return AWAIT_ERR;
     }
     return yield(AWAIT_OK);
+}
+
+void cancel_await_readable(int fd)
+{
+    list_t* reader_list = &loop.registered[fd];
+    list_remove(reader_list, current);
+    if (list_is_empty(reader_list)) {
+        FD_CLR(fd, &loop.readers);
+    }
+}
+
+int call_soon(struct generator* gen)
+{
+    if (!list_contains(&loop.scheduled, gen)) {
+        return list_add(&loop.scheduled, gen);
+    }
+    return 0;
+}
+
+void execute_scheduled()
+{
+    list_t curr_scheduled;
+    // prevent modification when resuming context in the scheduled coroutine.
+    list_steal(&curr_scheduled, &loop.scheduled);
+
+    while (!list_is_empty(&curr_scheduled)) {
+        struct generator* gen = (struct generator*)list_pop(&curr_scheduled);
+        next(gen, AWAIT_OK);
+    }
 }

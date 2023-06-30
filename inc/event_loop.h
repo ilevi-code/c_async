@@ -17,3 +17,7 @@ typedef enum await_status_e {
  *      Of the states above, only AWAIT_ERR did not block.
  */
 int await_readable(int fd);
+
+void cancel_await_readable(int fd);
+
+int call_soon(struct generator* gen);
