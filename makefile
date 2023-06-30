@@ -18,6 +18,9 @@ all: $(BINDIR)/main
 clean:
 	$(RM) $(BINDIR)/main $(OBJS)
 
+check: $(BINDIR)/main
+	$< --run-tests
+
 $(BINDIR)/main: $(OBJS) | $(BINDIR)
 	$(LINK.o) $(OUTPUT_OPTION) $^
 
