@@ -14,11 +14,23 @@ static struct loop_s {
     list_t registered[MAX_FDS];
     list_t scheduled;
     list_t tasks;
+    int stopped;
 } loop;
 
 void execute_scheduled();
 
 void handle_readers(fd_set* read_ready);
+
+void cancel_gen_list(list_t* gen_list, int do_destory)
+{
+    while (!list_is_empty(gen_list)) {
+        generator_t* gen = (generator_t*)list_pop(gen_list);
+        next(gen, AWAIT_CANCELLED);
+        if (do_destory) {
+            generator_destory(gen);
+        }
+    }
+}
 
 void event_loop_run(generator_t* gen)
 {
@@ -47,11 +59,13 @@ void event_loop_run(generator_t* gen)
         }
     }
 
-    while (!list_is_empty(&loop.tasks)) {
-        generator_t* gen = (generator_t*)list_pop(&loop.tasks);
-        next(gen, AWAIT_CANCELLED);
-        generator_destory(gen);
+    for (size_t i = 0; i < ARRAY_SIZE(loop.registered); ++i) {
+        cancel_gen_list(&loop.registered[i], 0);
     }
+
+    cancel_gen_list(&loop.scheduled, 0);
+
+    cancel_gen_list(&loop.tasks, 1);
 }
 
 void handle_readers(fd_set* read_ready)
