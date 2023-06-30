@@ -20,7 +20,7 @@ void execute_scheduled();
 
 void handle_readers(fd_set* read_ready);
 
-void event_loop_run(struct generator* gen)
+void event_loop_run(generator_t* gen)
 {
     loop.max_fd = 0;
     for (size_t i = 0; i < ARRAY_SIZE(loop.registered); i++) {
@@ -55,7 +55,7 @@ void handle_readers(fd_set* read_ready)
         if (!FD_ISSET(i, read_ready)) {
             continue;
         }
-        struct generator* gen = (struct generator*)list_pop(registered);
+        generator_t* gen = (generator_t*)list_pop(registered);
         if (gen != NULL) {
             next(gen, AWAIT_OK);
         }
@@ -84,7 +84,7 @@ void cancel_await_readable(int fd)
     }
 }
 
-int call_soon(struct generator* gen)
+int call_soon(generator_t* gen)
 {
     if (!list_contains(&loop.scheduled, gen)) {
         return list_add(&loop.scheduled, gen);
@@ -99,7 +99,7 @@ void execute_scheduled()
     list_steal(&curr_scheduled, &loop.scheduled);
 
     while (!list_is_empty(&curr_scheduled)) {
-        struct generator* gen = (struct generator*)list_pop(&curr_scheduled);
+        generator_t* gen = (generator_t*)list_pop(&curr_scheduled);
         next(gen, AWAIT_OK);
     }
 }

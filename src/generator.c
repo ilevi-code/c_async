@@ -20,11 +20,11 @@ struct gen_frame {
 
 void gen_entry(void);
 
-struct generator* generator_create(void* func, ...)
+generator_t* generator_create(void* func, ...)
 {
     void* allocated = NULL;
     struct gen_frame* stack = NULL;
-    struct generator* gen = NULL;
+    generator_t* gen = NULL;
 
     va_list args;
     va_start(args, func);
@@ -55,7 +55,7 @@ struct generator* generator_create(void* func, ...)
     return gen;
 }
 
-void generator_destory(struct generator* gen)
+void generator_destory(generator_t* gen)
 {
     munmap(gen->gen_stack, gen->stack_size);
     free(gen);

@@ -8,11 +8,11 @@
 typedef long long int arg_t;
 
 struct future_s {
-    struct generator* gen;
+    generator_t* gen;
     await_status_t (*func)(arg_t);
     void (*cleanup)(arg_t);
     arg_t arg;
-    struct generator* waiter;
+    generator_t* waiter;
     int status;
 };
 

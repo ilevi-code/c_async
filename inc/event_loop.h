@@ -2,7 +2,7 @@
 
 #include "generator.h"
 
-void event_loop_run(struct generator* gen);
+void event_loop_run(generator_t* gen);
 
 typedef enum await_status_e {
     AWAIT_OK,
@@ -20,4 +20,4 @@ int await_readable(int fd);
 
 void cancel_await_readable(int fd);
 
-int call_soon(struct generator* gen);
+int call_soon(generator_t* gen);

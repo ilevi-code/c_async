@@ -42,14 +42,14 @@ void serires_yielder(int param)
 
 void test_generator_creation()
 {
-    struct generator* gen = generator_create(&empty_func);
+    generator_t* gen = generator_create(&empty_func);
     assert(gen != NULL);
     generator_destory(gen);
 }
 
 void test_empty_generator()
 {
-    struct generator* gen = generator_create(&empty_func);
+    generator_t* gen = generator_create(&empty_func);
     assert(gen != NULL);
     next(gen);
     EXPECT(gen->status == GEN_STATUS_DONE);
@@ -58,7 +58,7 @@ void test_empty_generator()
 
 void test_generator_iteration()
 {
-    struct generator* gen = generator_create(&serires_yielder);
+    generator_t* gen = generator_create(&serires_yielder);
     assert(gen != NULL);
     EXPECT(next(gen) == 1);
     generator_destory(gen);
@@ -66,7 +66,7 @@ void test_generator_iteration()
 
 void test_generator_value_sending()
 {
-    struct generator* gen = generator_create(&expects_sent_cafebabeba5e);
+    generator_t* gen = generator_create(&expects_sent_cafebabeba5e);
     assert(gen != NULL);
     next(gen, 0xcafebabeba5e);
     generator_destory(gen);
@@ -74,7 +74,7 @@ void test_generator_value_sending()
 
 void test_stack_alignment()
 {
-    struct generator* gen = generator_create(&stack_alignment_checker);
+    generator_t* gen = generator_create(&stack_alignment_checker);
     assert(gen != NULL);
     next(gen);
     generator_destory(gen);
@@ -83,7 +83,7 @@ void test_stack_alignment()
 void test_generator_exhuastion()
 {
     int sum = 0;
-    struct generator* gen = generator_create(&serires_yielder);
+    generator_t* gen = generator_create(&serires_yielder);
     assert(gen != NULL);
     int value;
     GENERATOR_WHILE(value, gen)
@@ -96,7 +96,7 @@ void test_generator_exhuastion()
 
 void test_generator_overuse()
 {
-    struct generator* gen = generator_create(&serires_yielder);
+    generator_t* gen = generator_create(&serires_yielder);
     assert(gen != NULL);
     int value;
     GENERATOR_WHILE(value, gen)
@@ -114,7 +114,7 @@ void test_generator_overuse()
 }
 void test_parametrized_generator()
 {
-    struct generator* gen = generator_create(&empty_func, 0xdeadbeefcafe);
+    generator_t* gen = generator_create(&empty_func, 0xdeadbeefcafe);
     assert(gen != NULL);
     next(gen);
     EXPECT(gen->status == GEN_STATUS_DONE);
@@ -124,7 +124,7 @@ void test_parametrized_generator()
 void uses_other_generator(int reps)
 {
     for (int i = 0; i < reps; i++) {
-        struct generator* gen = generator_create(&serires_yielder, 0xdeadbeefcafe);
+        generator_t* gen = generator_create(&serires_yielder, 0xdeadbeefcafe);
         assert(gen != NULL);
         int value;
         GENERATOR_WHILE(value, gen)
@@ -140,7 +140,7 @@ void test_generator_recursion()
     int sum = 0;
     const int REPS = 10;
 
-    struct generator* gen = generator_create(&uses_other_generator, REPS);
+    generator_t* gen = generator_create(&uses_other_generator, REPS);
     assert(gen != NULL);
 
     int value;
