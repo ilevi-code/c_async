@@ -13,6 +13,7 @@ static struct loop_s {
     int max_fd;
     list_t registered[MAX_FDS];
     list_t scheduled;
+    list_t tasks;
 } loop;
 
 void execute_scheduled();
@@ -36,7 +37,7 @@ void event_loop_run(generator_t* gen)
         int available = select(loop.max_fd, &readers_copy, NULL, NULL, NULL);
         if (available == -1) {
             perror("Event loop select error");
-            return;
+            break;
         }
 
         handle_readers(&readers_copy);
@@ -44,6 +45,12 @@ void event_loop_run(generator_t* gen)
         while (!list_is_empty(&loop.scheduled)) {
             execute_scheduled();
         }
+    }
+
+    while (!list_is_empty(&loop.tasks)) {
+        generator_t* gen = (generator_t*)list_pop(&loop.tasks);
+        next(gen, AWAIT_CANCELLED);
+        generator_destory(gen);
     }
 }
 
@@ -97,8 +104,20 @@ void execute_scheduled()
     // prevent modification when resuming context in the scheduled coroutine.
     list_steal(&curr_scheduled, &loop.scheduled);
 
-    while (!list_is_empty(&curr_scheduled)) {
+    while (!list_is_empty(&curr_scheduled) && !loop.stopped) {
         generator_t* gen = (generator_t*)list_pop(&curr_scheduled);
         next(gen, AWAIT_OK);
     }
+}
+
+int create_task(generator_t* gen)
+{
+    if (list_add(&loop.tasks, gen) != 0) {
+        return -1;
+    }
+    if (call_soon(gen) != 0) {
+        list_remove(&loop.tasks, gen);
+        return -1;
+    }
+    return 0;
 }
