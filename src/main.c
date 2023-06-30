@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -45,54 +46,53 @@ int accept_client(int sock)
     return 0;
 }
 
-#include <string.h>
-int handle_input()
+void console_handler()
 {
-    char buffer[256] = {0};
-    ssize_t nread = read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
-    if (nread == -1) {
-        perror("Failed to read from console");
-        return 1;
+    while (1) {
+        char buffer[256] = {0};
+        if (await_readable(STDIN_FILENO) != AWAIT_OK) {
+            loop_shutdown();
+            return;
+        }
+        ssize_t nread = read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
+        if (nread == -1) {
+            perror("Failed to read from console");
+            loop_shutdown();
+        }
+        if (memcmp("quit", buffer, MIN(4, nread)) == 0) {
+            loop_shutdown();
+        } else {
+            printf("Unknown command: %s", buffer);
+        }
     }
-    if (memcmp("quit", buffer, MIN(4, nread)) == 0) {
-        return 1;
-    }
-    printf("Unknown command: %s", buffer);
-    return 0;
 }
 
 void run(int sock)
 {
-    size_t ready_idx;
-    int done = 0;
+    while (1) {
+        if (await_readable(sock) != AWAIT_OK) {
+            loop_shutdown();
+            return;
+        }
 
-    while (!done) {
-        future_descriptor_t descriptors[] = {
-            {await_readable, cancel_await_readable, .val = sock},
-            {await_readable, cancel_await_readable, .val = STDIN_FILENO},
-        };
-
-        ready_idx = desc_gather(descriptors, ARRAY_SIZE(descriptors));
-        switch (ready_idx) {
-        case 0:
-            if (accept_client(sock) != 0) {
-                done = 1;
-            } else {
-                printf("Accepted a client!\n");
-            }
-            break;
-        case 1:
-            done = handle_input();
-            break;
-        default:
-            fprintf(stderr, "Error waiting for console/socket\n");
-            break;
+        if (accept_client(sock) != 0) {
+            loop_shutdown();
+            return;
         }
     }
 }
 
 void server()
 {
+    generator_t* handler = generator_create(&console_handler);
+    if (handler == NULL) {
+        return;
+    }
+    if (create_task(handler) != 0) {
+        generator_destory(handler);
+        return;
+    }
+
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
         perror("socket");
