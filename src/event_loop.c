@@ -40,11 +40,12 @@ void event_loop_run(generator_t* gen)
     }
     list_init(&loop.scheduled);
     FD_ZERO(&loop.readers);
+    loop.stopped = 0;
     fd_set readers_copy;
 
     next(gen);
 
-    while (gen->status != GEN_STATUS_DONE) {
+    while (gen->status != GEN_STATUS_DONE && !loop.stopped) {
         memcpy(&readers_copy, &loop.readers, sizeof(loop.readers));  // preserve the existing state
         int available = select(loop.max_fd, &readers_copy, NULL, NULL, NULL);
         if (available == -1) {
@@ -54,7 +55,7 @@ void event_loop_run(generator_t* gen)
 
         handle_readers(&readers_copy);
 
-        while (!list_is_empty(&loop.scheduled)) {
+        while (!list_is_empty(&loop.scheduled) && !loop.stopped) {
             execute_scheduled();
         }
     }
@@ -70,7 +71,7 @@ void event_loop_run(generator_t* gen)
 
 void handle_readers(fd_set* read_ready)
 {
-    for (int i = 0; i < loop.max_fd; i++) {
+    for (int i = 0; i < loop.max_fd && !loop.stopped; i++) {
         list_t* registered = &loop.registered[i];
         if (!FD_ISSET(i, read_ready)) {
             continue;
@@ -126,6 +127,8 @@ void execute_scheduled()
 
 int create_task(generator_t* gen)
 {
+    // start the coroutine
+    next(gen);
     if (list_add(&loop.tasks, gen) != 0) {
         return -1;
     }
@@ -134,4 +137,9 @@ int create_task(generator_t* gen)
         return -1;
     }
     return 0;
+}
+
+void loop_shutdown(void)
+{
+    loop.stopped = 1;
 }

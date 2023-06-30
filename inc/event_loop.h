@@ -23,3 +23,5 @@ void cancel_await_readable(int fd);
 int call_soon(generator_t* gen);
 
 int create_task(generator_t* gen);
+
+void loop_shutdown(void);
