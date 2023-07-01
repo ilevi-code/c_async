@@ -12,7 +12,9 @@
 static struct loop_s {
     int max_fd;
     fd_set readers;
-    list_t registered[MAX_FDS];
+    list_t read_queues[MAX_FDS];
+    fd_set writers;
+    list_t write_queues[MAX_FDS];
     list_t scheduled;
     list_t tasks;
     int stopped;
@@ -21,6 +23,7 @@ static struct loop_s {
 void execute_scheduled();
 
 void handle_readers(fd_set* read_ready);
+void handle_writers(fd_set* read_ready);
 
 void cancel_gen_list(list_t* gen_list, int do_destory)
 {
@@ -48,20 +51,27 @@ static void exhuast_scheduled()
 static void loop_setup()
 {
     loop.max_fd = 0;
-    for (size_t i = 0; i < ARRAY_SIZE(loop.registered); i++) {
-        list_init(&loop.registered[i]);
+    for (size_t i = 0; i < ARRAY_SIZE(loop.read_queues); i++) {
+        list_init(&loop.read_queues[i]);
     }
-    list_init(&loop.scheduled);
     FD_ZERO(&loop.readers);
+    for (size_t i = 0; i < ARRAY_SIZE(loop.write_queues); i++) {
+        list_init(&loop.write_queues[i]);
+    }
+    FD_ZERO(&loop.writers);
+    list_init(&loop.scheduled);
+    list_init(&loop.tasks);
     loop.stopped = 0;
 }
 
 static int event_loop_select()
 {
     fd_set readers_copy;
+    fd_set writers_copy;
     memcpy(&readers_copy, &loop.readers, sizeof(loop.readers));  // preserve the existing state
+    memcpy(&writers_copy, &loop.writers, sizeof(loop.writers));  // preserve the existing state
 
-    int available = select(loop.max_fd, &readers_copy, NULL, NULL, NULL);
+    int available = select(loop.max_fd, &readers_copy, &writers_copy, NULL, NULL);
     if (available == -1) {
         perror("Event loop select error");
         return -1;
@@ -69,13 +79,15 @@ static int event_loop_select()
 
     handle_readers(&readers_copy);
 
+    handle_writers(&writers_copy);
+
     return 0;
 }
 
 void loop_teardown()
 {
-    for (size_t i = 0; i < ARRAY_SIZE(loop.registered); ++i) {
-        cancel_gen_list(&loop.registered[i], 0);
+    for (size_t i = 0; i < ARRAY_SIZE(loop.read_queues); ++i) {
+        cancel_gen_list(&loop.read_queues[i], 0);
     }
 
     cancel_gen_list(&loop.scheduled, 0);
@@ -100,11 +112,11 @@ void event_loop_run(generator_t* gen)
     loop_teardown();
 }
 
-void handle_readers(fd_set* read_ready)
+static void handle_event(fd_set* req_event_set, fd_set* cur_event_set, list_t* event_queues)
 {
     for (int i = 0; i < loop.max_fd && !loop.stopped; i++) {
-        list_t* registered = &loop.registered[i];
-        if (!FD_ISSET(i, read_ready)) {
+        list_t* registered = &event_queues[i];
+        if (!FD_ISSET(i, cur_event_set)) {
             continue;
         }
         generator_t* gen = (generator_t*)list_pop(registered);
@@ -112,28 +124,70 @@ void handle_readers(fd_set* read_ready)
             next(gen, AWAIT_OK);
         }
         if (list_is_empty(registered)) {
-            FD_CLR(i, &loop.readers);
+            FD_CLR(i, req_event_set);
         }
     }
 }
 
-await_status_t await_readable(int fd)
+void handle_writers(fd_set* write_ready)
+{
+    handle_event(&loop.writers, write_ready, loop.write_queues);
+}
+
+void handle_readers(fd_set* read_ready)
+{
+    handle_event(&loop.readers, read_ready, loop.read_queues);
+    /* for (int i = 0; i < loop.max_fd && !loop.stopped; i++) { */
+    /*     list_t* registered = &loop.read_queues[i]; */
+    /*     if (!FD_ISSET(i, read_ready)) { */
+    /*         continue; */
+    /*     } */
+    /*     generator_t* gen = (generator_t*)list_pop(registered); */
+    /*     if (gen != NULL) { */
+    /*         next(gen, AWAIT_OK); */
+    /*     } */
+    /*     if (list_is_empty(registered)) { */
+    /*         FD_CLR(i, &loop.readers); */
+    /*     } */
+    /* } */
+}
+
+static await_status_t await_event(int fd, fd_set* event_set, list_t* event_queue)
 {
     loop.max_fd = MAX(loop.max_fd, fd + 1);
-    FD_SET(fd, &loop.readers);
-    if (list_add(&loop.registered[fd], current) != 0) {
+    FD_SET(fd, event_set);
+    if (list_add(event_queue, current) != 0) {
         return AWAIT_ERR;
     }
     return yield(AWAIT_OK);
 }
 
+static void cancel_await_event(int fd, fd_set* event_set, list_t* event_queue)
+{
+    list_remove(event_queue, current);
+    if (list_is_empty(event_queue)) {
+        FD_CLR(fd, event_set);
+    }
+}
+
+await_status_t await_readable(int fd)
+{
+    return await_event(fd, &loop.readers, &loop.read_queues[fd]);
+}
+
 void cancel_await_readable(int fd)
 {
-    list_t* reader_list = &loop.registered[fd];
-    list_remove(reader_list, current);
-    if (list_is_empty(reader_list)) {
-        FD_CLR(fd, &loop.readers);
-    }
+    cancel_await_event(fd, &loop.readers, &loop.read_queues[fd]);
+}
+
+await_status_t await_writable(int fd)
+{
+    return await_event(fd, &loop.writers, &loop.write_queues[fd]);
+}
+
+void cancel_await_writable(int fd)
+{
+    cancel_await_event(fd, &loop.writers, &loop.write_queues[fd]);
 }
 
 int call_soon(generator_t* gen)

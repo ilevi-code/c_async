@@ -23,8 +23,15 @@ void client_handler(int sock)
         if (await_readable(sock) != AWAIT_OK) {
             break;
         }
-        ssize_t nread = read(sock, buffer, sizeof(buffer));
+        ssize_t nread = recv(sock, buffer, sizeof(buffer), 0);
+        if (nread == 0) {
+            break;
+        }
         printf("read %ld bytes from fd %d\n", nread, sock);
+        if (await_writable(sock) != AWAIT_OK) {
+            break;
+        }
+        send(sock, buffer, nread, 0);
     }
     close(sock);
 }
@@ -37,6 +44,11 @@ int accept_client(int sock)
     if (client == -1) {
         perror("Accepting client failed");
         goto error_ret;
+    }
+
+    int value = 4096;
+    if (setsockopt(client, SOL_SOCKET, SO_RCVBUF, &value, sizeof(value)) != 0) {
+        perror("Failed to set recv-buffer size");
     }
 
     if (fcntl(client, F_SETFD, O_NONBLOCK) != 0) {

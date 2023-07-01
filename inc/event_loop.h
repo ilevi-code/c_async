@@ -20,6 +20,10 @@ await_status_t await_readable(int fd);
 
 void cancel_await_readable(int fd);
 
+await_status_t await_writable(int fd);
+
+void cancel_await_writable(int fd);
+
 int call_soon(generator_t* gen);
 
 /**
