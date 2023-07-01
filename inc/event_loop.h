@@ -22,6 +22,11 @@ void cancel_await_readable(int fd);
 
 int call_soon(generator_t* gen);
 
-int create_task(generator_t* gen);
+/**
+ * Takes ownership over `gen`, and runs it concurrently.
+ */
+int create_task_from(generator_t* gen);
+
+int create_task(void* func, ...);
 
 void loop_shutdown(void);
