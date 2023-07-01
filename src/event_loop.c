@@ -10,8 +10,8 @@
 #define MAX_FDS (1024)
 
 static struct loop_s {
-    fd_set readers;
     int max_fd;
+    fd_set readers;
     list_t registered[MAX_FDS];
     list_t scheduled;
     list_t tasks;
@@ -33,7 +33,19 @@ void cancel_gen_list(list_t* gen_list, int do_destory)
     }
 }
 
-void event_loop_run(generator_t* gen)
+/**
+ * During execution of scheduled calls, some more calls may be added.
+ * This will run until all coroutines have wither finished, or blocked
+ * on some other await primitives.
+ */
+static void exhuast_scheduled()
+{
+    while (!list_is_empty(&loop.scheduled) && !loop.stopped) {
+        execute_scheduled();
+    }
+}
+
+static void loop_setup()
 {
     loop.max_fd = 0;
     for (size_t i = 0; i < ARRAY_SIZE(loop.registered); i++) {
@@ -42,25 +54,26 @@ void event_loop_run(generator_t* gen)
     list_init(&loop.scheduled);
     FD_ZERO(&loop.readers);
     loop.stopped = 0;
+}
+
+static int event_loop_select()
+{
     fd_set readers_copy;
+    memcpy(&readers_copy, &loop.readers, sizeof(loop.readers));  // preserve the existing state
 
-    next(gen);
-
-    while (gen->status != GEN_STATUS_DONE && !loop.stopped) {
-        while (!list_is_empty(&loop.scheduled) && !loop.stopped) {
-            execute_scheduled();
-        }
-
-        memcpy(&readers_copy, &loop.readers, sizeof(loop.readers));  // preserve the existing state
-        int available = select(loop.max_fd, &readers_copy, NULL, NULL, NULL);
-        if (available == -1) {
-            perror("Event loop select error");
-            break;
-        }
-
-        handle_readers(&readers_copy);
+    int available = select(loop.max_fd, &readers_copy, NULL, NULL, NULL);
+    if (available == -1) {
+        perror("Event loop select error");
+        return -1;
     }
 
+    handle_readers(&readers_copy);
+
+    return 0;
+}
+
+void loop_teardown()
+{
     for (size_t i = 0; i < ARRAY_SIZE(loop.registered); ++i) {
         cancel_gen_list(&loop.registered[i], 0);
     }
@@ -68,6 +81,23 @@ void event_loop_run(generator_t* gen)
     cancel_gen_list(&loop.scheduled, 0);
 
     cancel_gen_list(&loop.tasks, 1);
+}
+
+void event_loop_run(generator_t* gen)
+{
+    loop_setup();
+
+    next(gen);
+
+    while (gen->status != GEN_STATUS_DONE && !loop.stopped) {
+        exhuast_scheduled();
+
+        if (event_loop_select() != 0) {
+            loop.stopped = 1;
+        }
+    }
+
+    loop_teardown();
 }
 
 void handle_readers(fd_set* read_ready)
