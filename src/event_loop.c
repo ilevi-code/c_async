@@ -210,8 +210,11 @@ void execute_scheduled()
     }
 }
 
-int create_task_from(generator_t* gen)
+int create_task(generator_t* gen)
 {
+    if (gen == NULL) {
+        return -1;
+    }
     if (list_add(&loop.tasks, gen) != 0) {
         return -1;
     }
@@ -220,21 +223,6 @@ int create_task_from(generator_t* gen)
         return -1;
     }
     return 0;
-}
-
-int create_task(void* func, ...)
-{
-    va_list ap;
-    va_start(ap, func);
-    void* arg = va_arg(ap, void*);
-    va_end(ap);
-
-    generator_t* task = generator_create(func, arg);
-    if (task == NULL) {
-        return -1;
-    }
-
-    return create_task_from(task);
 }
 
 void loop_shutdown(void)
