@@ -46,6 +46,10 @@ void event_loop_run(generator_t* gen)
     next(gen);
 
     while (gen->status != GEN_STATUS_DONE && !loop.stopped) {
+        while (!list_is_empty(&loop.scheduled) && !loop.stopped) {
+            execute_scheduled();
+        }
+
         memcpy(&readers_copy, &loop.readers, sizeof(loop.readers));  // preserve the existing state
         int available = select(loop.max_fd, &readers_copy, NULL, NULL, NULL);
         if (available == -1) {
@@ -54,10 +58,6 @@ void event_loop_run(generator_t* gen)
         }
 
         handle_readers(&readers_copy);
-
-        while (!list_is_empty(&loop.scheduled) && !loop.stopped) {
-            execute_scheduled();
-        }
     }
 
     for (size_t i = 0; i < ARRAY_SIZE(loop.registered); ++i) {
