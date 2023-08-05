@@ -9,7 +9,6 @@
 
 #include "event_loop.h"
 #include "generator.h"
-#include "gather.h"
 #include "utils.h"
 
 #define SERVER_PORT (1337)
