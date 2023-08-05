@@ -8,9 +8,8 @@
 #include <unistd.h>
 
 #include "event_loop.h"
-#include "future.h"
 #include "generator.h"
-#include "tasks.h"
+#include "gather.h"
 #include "utils.h"
 
 #define SERVER_PORT (1337)
@@ -161,7 +160,7 @@ void server()
         goto error_close;
     }
 
-    printf("server is up\n");
+    printf("server is listening on port %d\n", SERVER_PORT);
     run(fd);
 
 error_close:
